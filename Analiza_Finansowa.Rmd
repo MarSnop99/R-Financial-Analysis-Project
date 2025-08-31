@@ -1,0 +1,113 @@
+---
+title: "Analiza Finansowa Spółki Apple Inc. (AAPL)"
+author: "Marcin Snopek"
+date: "2025-08-31"
+output: html_document
+---
+
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+options(scipen = 999)
+```
+
+### 1. Wprowadzenie
+
+Celem tego projektu jest przeprowadzenie analizy finansowej spółki Apple Inc. (ticker: AAPL) na podstawie publicznie dostępnych danych. Analiza obejmuje pobranie danych, obliczenie kluczowych wskaźników finansowych oraz ich wizualizację w celu oceny kondycji i trendów w rentowności oraz strukturze finansowania firmy.
+
+### 2. Przygotowanie Środowiska i Pobieranie Danych
+
+Na początku ładujemy niezbędne biblioteki i ustawiamy klucz API. Następnie pobieramy trzy kluczowe sprawozdania finansowe: rachunek zysków i strat, bilans oraz rachunek przepływów pieniężnych.
+
+```{r ladowanie_danych}
+library(fmpapi)
+library(tidyverse)
+library(scales) 
+
+# Konfiguracja API
+# fmp_api_key("MOJ_KLUCZ_API") 
+# readRenviron('~/.Renviron')
+
+ticker <- "AAPL"
+income_statement <- fmp_income(symbol = ticker)
+balance_sheet <- fmp_balance_sheet(symbol = ticker)
+cash_flow <- fmp_cash_flow(symbol = ticker)
+```
+
+### 3. Przetwarzanie Danych i Obliczanie Wskaźników
+
+Pobrane dane są łączone w jedną, spójną tabelę. Następnie, na podstawie surowych danych, obliczane są kluczowe wskaźniki finansowe (KPIs).
+
+```{r przetwarzanie_i_wskazniki}
+combined_data <- left_join(income_statement, balance_sheet, by = c("symbol", "date"))
+full_financials <- left_join(combined_data, cash_flow, by = c("symbol", "date"))
+
+clean_financials <- full_financials %>%
+  select(
+    symbol, date, revenue, net_income = net_income.y,
+    total_assets, total_debt, total_equity
+  )
+
+final_report_table <- clean_financials %>%
+  mutate(
+    ROE = net_income / total_equity,
+    ROA = net_income / total_assets,
+    Debt_to_Equity = total_debt / total_equity,
+    Net_Profit_Margin = net_income / revenue
+  )
+
+
+formatted_table <- final_report_table %>%
+  mutate(across(where(is.numeric) & !contains("Ratio") & !contains("ROE") & !contains("ROA"), ~ comma(.x, accuracy = 1))) %>%
+  mutate(across(contains("Ratio") | contains("ROE") | contains("ROA"), ~ number(.x, accuracy = 0.01)))
+
+knitr::kable(formatted_table, caption = "Kluczowe Wskaźniki Finansowe dla AAPL")
+```
+
+### 4. Wizualizacja i Analiza Wyników
+
+W tej sekcji przedstawione są wizualizacje kluczowych wskaźników, które pozwalają na analizę trendów i ocenę wyników finansowych spółki.
+
+#### 4.1. Zwrot z Kapitału Własnego (ROE)
+
+Poniższy wykres przedstawia, jak efektywnie firma generowała zyski z kapitału powierzonego przez akcjonariuszy.
+
+```{r wizualizacja_roe, out.width="100%"}
+
+ggplot(data = final_report_table, aes(x = date, y = ROE)) +
+  geom_line(color = "blue", size = 1.5) +
+  geom_point(color = "blue", size = 3) +
+  scale_y_continuous(labels = scales::percent) +
+  labs(
+    title = "Zwrot z Kapitału Własnego (ROE) dla Apple Inc. (AAPL)",
+    subtitle = "Dane roczne z ostatnich 5 lat",
+    x = "Data",
+    y = "ROE (Return on Equity)"
+  ) +
+  theme_minimal()
+```
+
+**Wniosek:** Zwrot z kapitału przekroczył 100% w 2021 roku, rósł do roku 2023, i później utrzymywał się na bardzo wysokim poziomie. Firma Apple ma ogromną efektywność i ją utrzymuje z kolejnymi latami. Akcjonariusze mogą z każdym kolejnym rokiem liczyć na wysokie dywidendy.
+
+#### 4.2. Struktura Zadłużenia
+
+Wykres słupkowy pokazuje zmianę wskaźnika zadłużenia do kapitału własnego.
+
+```{r wizualizacja_zadluzenie, out.width="100%"}
+ggplot(data = final_report_table, aes(x = date, y = Debt_to_Equity)) +
+  geom_bar(stat = "identity", fill = "skyblue") +
+  labs(
+    title = "Wskaźnik Zadłużenia do Kapitału Własnego dla Apple Inc. (AAPL)",
+    subtitle = "Debt to Equity Ratio",
+    x = "Data",
+    y = "Debt to Equity"
+  ) +
+  theme_minimal()
+```
+
+**Wniosek:** Firma od kilku lat utrzymuje wskaźnik powyżej dwóch, zalecane wartości to około 1,75, oznacza to że firma angażuje mniej kapitału własnego w finansowanie, jednak nie powinno budzić to niepokoju ze względu na efektywność przedstawioną wcześniej.
+
+### 5. Podsumowanie
+
+Projekt zakończył się sukcesem, demonstrując pełen cykl analityczny: od pozyskania i przetworzenia danych, przez obliczenie kluczowych wskaźników, po ich wizualizację i interpretację.
