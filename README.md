@@ -5,7 +5,7 @@ Kompleksowy projekt analityczny w R, demonstrujący proces od pobrania danych pr
 
 Kompleksowy projekt analityczny w R, demonstrujący pełen cykl pracy z danymi: od pozyskania danych przez API, przez ich przetwarzanie i obliczenie wskaźników, aż po wizualizację i stworzenie dynamicznego raportu w R Markdown.
 
-## 📊 [Zobacz Interaktywny Raport na Żywo]([LINK_DO_RAPORTU_HTML](https://htmlpreview.github.io/?https://github.com/MarSnop99/R-Financial-Analysis-Project/blob/main/Analiza_Finansowa.html))
+## 📊 [Zobacz Interaktywny Raport Na Żywo](https://htmlpreview.github.io/?https://github.com/MarSnop99/R-Financial-Analysis-Project/blob/main/Analiza_Finansowa.html)
 
 
 ## Kluczowe Funkcjonalności
