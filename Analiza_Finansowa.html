@@ -372,15 +372,19 @@ rentowności oraz strukturze finansowania firmy.</p>
 <p>Na początku ładujemy niezbędne biblioteki i ustawiamy klucz API.
 Następnie pobieramy trzy kluczowe sprawozdania finansowe: rachunek
 zysków i strat, bilans oraz rachunek przepływów pieniężnych.</p>
-<pre class="r"><code>library(fmpapi)
+<pre class="r"><code># Krok 1: Załadowanie bibliotek
+library(fmpapi)
 library(tidyverse)
-library(scales) 
+library(scales) # Kluczowa biblioteka do formatowania liczb i procentów
 
-# Konfiguracja API
+# Krok 2: Konfiguracja API 
 # fmp_api_key(&quot;MOJ_KLUCZ_API&quot;) 
-# readRenviron(&#39;~/.Renviron&#39;)
+# readRenviron(&#39;~/.Renviron&#39;) 
 
+# Krok 3: Zdefiniowanie analizowanej spółki
 ticker &lt;- &quot;AAPL&quot;
+
+# Krok 4: Pobranie danych finansowych
 income_statement &lt;- fmp_income(symbol = ticker)
 balance_sheet &lt;- fmp_balance_sheet(symbol = ticker)
 cash_flow &lt;- fmp_cash_flow(symbol = ticker)</code></pre>
@@ -390,15 +394,18 @@ cash_flow &lt;- fmp_cash_flow(symbol = ticker)</code></pre>
 <p>Pobrane dane są łączone w jedną, spójną tabelę. Następnie, na
 podstawie surowych danych, obliczane są kluczowe wskaźniki finansowe
 (KPIs).</p>
-<pre class="r"><code>combined_data &lt;- left_join(income_statement, balance_sheet, by = c(&quot;symbol&quot;, &quot;date&quot;))
+<pre class="r"><code># Krok 1: Połączenie tabel w jedną ramkę danych
+combined_data &lt;- left_join(income_statement, balance_sheet, by = c(&quot;symbol&quot;, &quot;date&quot;))
 full_financials &lt;- left_join(combined_data, cash_flow, by = c(&quot;symbol&quot;, &quot;date&quot;))
 
+# Krok 2: Wyczyszczenie i selekcja kluczowych kolumn
 clean_financials &lt;- full_financials %&gt;%
   select(
     symbol, date, revenue, net_income = net_income.y,
     total_assets, total_debt, total_equity
   )
 
+# Krok 3: Obliczenie kluczowych wskaźników finansowych
 final_report_table &lt;- clean_financials %&gt;%
   mutate(
     ROE = net_income / total_equity,
@@ -407,24 +414,37 @@ final_report_table &lt;- clean_financials %&gt;%
     Net_Profit_Margin = net_income / revenue
   )
 
-
+# Krok 4: Stworzenie pięknie sformatowanej tabeli do raportu
 formatted_table &lt;- final_report_table %&gt;%
-  mutate(across(where(is.numeric) &amp; !contains(&quot;Ratio&quot;) &amp; !contains(&quot;ROE&quot;) &amp; !contains(&quot;ROA&quot;), ~ comma(.x, accuracy = 1))) %&gt;%
-  mutate(across(contains(&quot;Ratio&quot;) | contains(&quot;ROE&quot;) | contains(&quot;ROA&quot;), ~ number(.x, accuracy = 0.01)))
+  mutate(
+    # Formatuj duże liczby finansowe, aby były czytelne (np. 391,035,000,000)
+    revenue = comma(revenue, accuracy = 1),
+    net_income = comma(net_income, accuracy = 1),
+    total_assets = comma(total_assets, accuracy = 1),
+    total_debt = comma(total_debt, accuracy = 1),
+    total_equity = comma(total_equity, accuracy = 1),
+    
+    # Formatuj wskaźniki jako procenty lub liczby z 2 miejscami po przecinku
+    ROE = percent(ROE, accuracy = 0.1),
+    ROA = percent(ROA, accuracy = 0.1),
+    Debt_to_Equity = number(Debt_to_Equity, accuracy = 0.01),
+    Net_Profit_Margin = percent(Net_Profit_Margin, accuracy = 0.1)
+  )
 
-knitr::kable(formatted_table, caption = &quot;Kluczowe Wskaźniki Finansowe dla AAPL&quot;)</code></pre>
+# Krok 5: Wyświetlenie finalnej tabeli z krawędziami
+knitr::kable(formatted_table, caption = &quot;Kluczowe Wskaźniki Finansowe dla AAPL&quot;, format = &quot;pipe&quot;)</code></pre>
 <table>
 <caption>Kluczowe Wskaźniki Finansowe dla AAPL</caption>
 <colgroup>
-<col width="5%" />
+<col width="4%" />
 <col width="7%" />
 <col width="11%" />
 <col width="10%" />
 <col width="11%" />
 <col width="11%" />
 <col width="10%" />
-<col width="3%" />
-<col width="3%" />
+<col width="4%" />
+<col width="4%" />
 <col width="10%" />
 <col width="12%" />
 </colgroup>
@@ -452,10 +472,10 @@ knitr::kable(formatted_table, caption = &quot;Kluczowe Wskaźniki Finansowe dla 
 <td align="left">364,980,000,000</td>
 <td align="left">119,059,000,000</td>
 <td align="left">56,950,000,000</td>
-<td align="left">1.65</td>
-<td align="left">0.26</td>
-<td align="left">2</td>
-<td align="left">0</td>
+<td align="left">164.6%</td>
+<td align="left">25.7%</td>
+<td align="left">2.09</td>
+<td align="left">24.0%</td>
 </tr>
 <tr class="even">
 <td align="left">AAPL</td>
@@ -465,10 +485,10 @@ knitr::kable(formatted_table, caption = &quot;Kluczowe Wskaźniki Finansowe dla 
 <td align="left">352,583,000,000</td>
 <td align="left">123,930,000,000</td>
 <td align="left">62,146,000,000</td>
-<td align="left">1.56</td>
-<td align="left">0.28</td>
-<td align="left">2</td>
-<td align="left">0</td>
+<td align="left">156.1%</td>
+<td align="left">27.5%</td>
+<td align="left">1.99</td>
+<td align="left">25.3%</td>
 </tr>
 <tr class="odd">
 <td align="left">AAPL</td>
@@ -478,10 +498,10 @@ knitr::kable(formatted_table, caption = &quot;Kluczowe Wskaźniki Finansowe dla 
 <td align="left">352,755,000,000</td>
 <td align="left">132,480,000,000</td>
 <td align="left">50,672,000,000</td>
-<td align="left">1.97</td>
-<td align="left">0.28</td>
-<td align="left">3</td>
-<td align="left">0</td>
+<td align="left">197.0%</td>
+<td align="left">28.3%</td>
+<td align="left">2.61</td>
+<td align="left">25.3%</td>
 </tr>
 <tr class="even">
 <td align="left">AAPL</td>
@@ -491,10 +511,10 @@ knitr::kable(formatted_table, caption = &quot;Kluczowe Wskaźniki Finansowe dla 
 <td align="left">351,002,000,000</td>
 <td align="left">136,522,000,000</td>
 <td align="left">63,090,000,000</td>
-<td align="left">1.50</td>
-<td align="left">0.27</td>
-<td align="left">2</td>
-<td align="left">0</td>
+<td align="left">150.1%</td>
+<td align="left">27.0%</td>
+<td align="left">2.16</td>
+<td align="left">25.9%</td>
 </tr>
 <tr class="odd">
 <td align="left">AAPL</td>
@@ -504,10 +524,10 @@ knitr::kable(formatted_table, caption = &quot;Kluczowe Wskaźniki Finansowe dla 
 <td align="left">323,888,000,000</td>
 <td align="left">122,278,000,000</td>
 <td align="left">65,339,000,000</td>
-<td align="left">0.88</td>
-<td align="left">0.18</td>
-<td align="left">2</td>
-<td align="left">0</td>
+<td align="left">87.9%</td>
+<td align="left">17.7%</td>
+<td align="left">1.87</td>
+<td align="left">20.9%</td>
 </tr>
 </tbody>
 </table>

@@ -21,15 +21,19 @@ Celem tego projektu jest przeprowadzenie analizy finansowej spółki Apple Inc. 
 Na początku ładujemy niezbędne biblioteki i ustawiamy klucz API. Następnie pobieramy trzy kluczowe sprawozdania finansowe: rachunek zysków i strat, bilans oraz rachunek przepływów pieniężnych.
 
 ```{r ladowanie_danych}
+# Krok 1: Załadowanie bibliotek
 library(fmpapi)
 library(tidyverse)
-library(scales) 
+library(scales) # Kluczowa biblioteka do formatowania liczb i procentów
 
-# Konfiguracja API
+# Krok 2: Konfiguracja API 
 # fmp_api_key("MOJ_KLUCZ_API") 
-# readRenviron('~/.Renviron')
+# readRenviron('~/.Renviron') 
 
+# Krok 3: Zdefiniowanie analizowanej spółki
 ticker <- "AAPL"
+
+# Krok 4: Pobranie danych finansowych
 income_statement <- fmp_income(symbol = ticker)
 balance_sheet <- fmp_balance_sheet(symbol = ticker)
 cash_flow <- fmp_cash_flow(symbol = ticker)
@@ -40,15 +44,18 @@ cash_flow <- fmp_cash_flow(symbol = ticker)
 Pobrane dane są łączone w jedną, spójną tabelę. Następnie, na podstawie surowych danych, obliczane są kluczowe wskaźniki finansowe (KPIs).
 
 ```{r przetwarzanie_i_wskazniki}
+# Krok 1: Połączenie tabel w jedną ramkę danych
 combined_data <- left_join(income_statement, balance_sheet, by = c("symbol", "date"))
 full_financials <- left_join(combined_data, cash_flow, by = c("symbol", "date"))
 
+# Krok 2: Wyczyszczenie i selekcja kluczowych kolumn
 clean_financials <- full_financials %>%
   select(
     symbol, date, revenue, net_income = net_income.y,
     total_assets, total_debt, total_equity
   )
 
+# Krok 3: Obliczenie kluczowych wskaźników finansowych
 final_report_table <- clean_financials %>%
   mutate(
     ROE = net_income / total_equity,
@@ -57,12 +64,25 @@ final_report_table <- clean_financials %>%
     Net_Profit_Margin = net_income / revenue
   )
 
-
+# Krok 4: Stworzenie pięknie sformatowanej tabeli do raportu
 formatted_table <- final_report_table %>%
-  mutate(across(where(is.numeric) & !contains("Ratio") & !contains("ROE") & !contains("ROA"), ~ comma(.x, accuracy = 1))) %>%
-  mutate(across(contains("Ratio") | contains("ROE") | contains("ROA"), ~ number(.x, accuracy = 0.01)))
+  mutate(
+    # Formatuj duże liczby finansowe, aby były czytelne (np. 391,035,000,000)
+    revenue = comma(revenue, accuracy = 1),
+    net_income = comma(net_income, accuracy = 1),
+    total_assets = comma(total_assets, accuracy = 1),
+    total_debt = comma(total_debt, accuracy = 1),
+    total_equity = comma(total_equity, accuracy = 1),
+    
+    # Formatuj wskaźniki jako procenty lub liczby z 2 miejscami po przecinku
+    ROE = percent(ROE, accuracy = 0.1),
+    ROA = percent(ROA, accuracy = 0.1),
+    Debt_to_Equity = number(Debt_to_Equity, accuracy = 0.01),
+    Net_Profit_Margin = percent(Net_Profit_Margin, accuracy = 0.1)
+  )
 
-knitr::kable(formatted_table, caption = "Kluczowe Wskaźniki Finansowe dla AAPL")
+# Krok 5: Wyświetlenie finalnej tabeli z krawędziami
+knitr::kable(formatted_table, caption = "Kluczowe Wskaźniki Finansowe dla AAPL", format = "pipe")
 ```
 
 ### 4. Wizualizacja i Analiza Wyników
@@ -74,7 +94,6 @@ W tej sekcji przedstawione są wizualizacje kluczowych wskaźników, które pozw
 Poniższy wykres przedstawia, jak efektywnie firma generowała zyski z kapitału powierzonego przez akcjonariuszy.
 
 ```{r wizualizacja_roe, out.width="100%"}
-
 ggplot(data = final_report_table, aes(x = date, y = ROE)) +
   geom_line(color = "blue", size = 1.5) +
   geom_point(color = "blue", size = 3) +
